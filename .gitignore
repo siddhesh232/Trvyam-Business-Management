@@ -424,3 +424,17 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# --- Project secrets & React Native ---
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.mobileprovision
+appsettings.*.local.json
+secrets.json
+node_modules/
+Frontend/android/app/build/
+Frontend/ios/Pods/

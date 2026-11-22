@@ -1,0 +1,25 @@
+erDiagram
+    Users ||--o{ BusinessMembers : "assigned to"
+    Businesses ||--o{ BusinessMembers : "has"
+    BusinessMembers ||--|| BusinessPermissions : "configured by Admin"
+    Users ||--o{ RefreshTokens : owns
+    Users ||--o{ PasswordResetTokens : requests
+    Customers ||--o{ CustomerBusinesses : "tagged"
+    Businesses ||--o{ CustomerBusinesses : "has"
+    Products ||--o{ BusinessProducts : "available in"
+    Businesses ||--o{ BusinessProducts : "offers"
+    Businesses ||--o{ Expenses : records
+    Users ||--o{ Expenses : "purchased by / created by"
+    Businesses ||--o{ SalesOrders : records
+    Customers ||--o{ SalesOrders : places
+    SalesOrders ||--|{ SalesOrderItems : contains
+    Products ||--o{ SalesOrderItems : "snapshotted from"
+    SalesOrders ||--o{ Payments : "receives many"
+    SalesOrders ||--o{ GstInvoices : "invoiced by"
+    GstInvoices ||--o{ GstInvoices : "credit note / amendment"
+    Businesses ||--o{ InvoiceSequences : numbers
+    SalesOrders ||--o{ SalesReturns : "returned via"
+    SalesReturns ||--|{ SalesReturnItems : contains
+    SalesOrderItems ||--o{ SalesReturnItems : "returned item"
+    Businesses ||--o{ FinancialAdjustments : has
+    Users ||--o{ AuditLogs : "performed"
