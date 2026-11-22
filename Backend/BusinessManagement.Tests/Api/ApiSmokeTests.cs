@@ -1,39 +1,33 @@
 using System.Net;
 using FluentAssertions;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace BusinessManagement.Tests.Api;
 
-public sealed class TestApiFactory : WebApplicationFactory<Program>
-{
-    public TestApiFactory()
-    {
-        // Program.cs reads Jwt settings eagerly while building the host, before WebApplicationFactory's
-        // ConfigureAppConfiguration callbacks run, so test secrets must come from environment variables.
-        Environment.SetEnvironmentVariable("ConnectionStrings__Default", "Server=localhost;Database=unused;TrustServerCertificate=True");
-        Environment.SetEnvironmentVariable("Jwt__SigningKey", "test-only-signing-key-0123456789-abcdef-0123456789");
-    }
-
-    protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development");
-}
-
-public sealed class ApiSmokeTests(TestApiFactory factory) : IClassFixture<TestApiFactory>
+[Collection("Api")]
+public sealed class ApiSmokeTests(ApiFixture fx)
 {
     [Fact]
     public async Task Health_endpoint_is_reachable_anonymously()
     {
-        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
-        var res = await client.GetAsync("/health");
+        var res = await fx.CreateClient().GetAsync("/health");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
     public async Task Swagger_document_is_generated_in_development()
     {
-        var client = factory.CreateClient();
-        var res = await client.GetAsync("/swagger/v1/swagger.json");
+        var res = await fx.CreateClient().GetAsync("/swagger/v1/swagger.json");
         res.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await res.Content.ReadAsStringAsync()).Should().Contain("Trvyam Management API");
+        var json = await res.Content.ReadAsStringAsync();
+        json.Should().Contain("Trvyam Management API").And.Contain("/api/v1/auth/login");
+    }
+
+    [Theory]
+    [InlineData("/api/v1/me")]
+    [InlineData("/api/v1/businesses/1/my-permissions")]
+    public async Task Protected_endpoints_reject_anonymous_callers(string url)
+    {
+        var res = await fx.CreateClient().GetAsync(url);
+        res.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 }

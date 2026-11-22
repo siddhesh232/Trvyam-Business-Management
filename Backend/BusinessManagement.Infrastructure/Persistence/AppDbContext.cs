@@ -6,6 +6,7 @@ using BusinessManagement.Domain.Entities;
 using BusinessManagement.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace BusinessManagement.Infrastructure.Persistence;
 
@@ -55,6 +56,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
             et.SetQueryFilter(Expression.Lambda(notDeleted, p));
         }
     }
+
+    public async Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default) =>
+        await Database.BeginTransactionAsync(cancellationToken);
 
     // ---------------------------------------------------------------- audit + soft delete
     private sealed record PendingAudit(EntityEntry Entry, AuditAction Action, string? Old, string? New);

@@ -31,6 +31,7 @@ public sealed class DbFixture : IAsyncLifetime
     private readonly string _master = Environment.GetEnvironmentVariable("TEST_SQL_CONNECTION") ?? "";
     private readonly string _dbName = "tbm_" + Guid.NewGuid().ToString("N")[..12];
     private string _connectionString = "";
+    public string ConnectionString => _connectionString;
 
     public long AdminId { get; private set; }
     public long MemberId { get; private set; }

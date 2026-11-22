@@ -1,9 +1,12 @@
 using System.Text;
 using BusinessManagement.API.Configuration;
+using BusinessManagement.API.Filters;
 using BusinessManagement.API.Middleware;
 using BusinessManagement.API.Services;
 using BusinessManagement.Application.Abstractions;
+using BusinessManagement.Application;
 using BusinessManagement.Infrastructure;
+using System.Threading.RateLimiting;
 using BusinessManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -45,9 +48,22 @@ builder.Services
 builder.Services.AddAuthorization();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<ITokenService, JwtTokenService>();
+builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddControllers()
+// Brute-force protection on anonymous auth endpoints (per client IP).
+var authPermit = builder.Configuration.GetValue("RateLimiting:AuthPermitPerMinute", 10);
+builder.Services.AddRateLimiter(o =>
+{
+    o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    o.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = authPermit, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+});
+
+builder.Services.AddControllers(o => o.Filters.Add<ValidationActionFilter>())
     .AddJsonOptions(o => o.JsonSerializerOptions.DefaultIgnoreCondition =
         System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull);
 builder.Services.AddProblemDetails();
@@ -92,6 +108,7 @@ if (app.Environment.IsDevelopment() || app.Configuration.GetValue<bool>("Swagger
     app.UseSwaggerUI(o => o.SwaggerEndpoint("/swagger/v1/swagger.json", "Trvyam Management API v1"));
 }
 
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapHealthChecks("/health").AllowAnonymous();

@@ -1,4 +1,5 @@
 using BusinessManagement.Application.Abstractions;
+using BusinessManagement.Infrastructure.Email;
 using BusinessManagement.Infrastructure.Persistence;
 using BusinessManagement.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,8 @@ public static class DependencyInjection
             sql => sql.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName)));
         services.AddScoped<IAppDbContext>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
+        services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+        services.AddSingleton<IEmailSender, SmtpEmailSender>();
         return services;
     }
 }

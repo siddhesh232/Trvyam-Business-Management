@@ -2,6 +2,7 @@ using BusinessManagement.Domain.Entities;
 using BusinessManagement.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace BusinessManagement.Application.Abstractions;
 
@@ -45,5 +46,22 @@ public interface IAppDbContext
     DbSet<FinancialAdjustment> FinancialAdjustments { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DatabaseFacade Database { get; }
+    Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+}
+
+public sealed record AccessToken(string Token, DateTime ExpiresAt);
+public sealed record RefreshTokenValue(string Raw, string Hash, DateTime ExpiresAt);
+
+public interface ITokenService
+{
+    AccessToken CreateAccessToken(User user);
+    RefreshTokenValue CreateRefreshToken();
+    /// <summary>SHA-256 hex of a raw refresh token. Raw tokens are never stored.</summary>
+    string HashRefreshToken(string rawToken);
+}
+
+public interface IEmailSender
+{
+    Task SendAsync(string toAddress, string subject, string textBody, CancellationToken cancellationToken = default);
 }
