@@ -18,7 +18,16 @@ jobs:
           dotnet-version: '10.0.x'
       - run: dotnet restore BusinessManagement.sln
       - run: dotnet build BusinessManagement.sln --no-restore -c Release
-      - run: dotnet test BusinessManagement.sln --no-build -c Release --logger "trx;LogFileName=results.trx" --logger "console;verbosity=normal"
+      - name: Test
+        run: |
+          set +e
+          dotnet test BusinessManagement.sln --no-build -c Release --logger "console;verbosity=normal" 2>&1 | tee test.log
+          code=${PIPESTATUS[0]}
+          if [ $code -ne 0 ]; then
+            msg=$(grep -vE '^\s*$' test.log | grep -E "Failed |Error Message|Exception|Assert|Expected|error " | head -c 3500 | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=TestFailure::${msg}"
+          fi
+          exit $code
       - uses: actions/upload-artifact@v4
         if: always()
         with:
