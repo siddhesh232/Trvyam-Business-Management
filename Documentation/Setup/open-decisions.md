@@ -4,8 +4,8 @@ Defaults below are used unless you say otherwise.
 
 | # | Item | Default |
 |---|---|---|
-| 1 | Official logo (PNG/SVG, transparent) | **Required** - splash/app icon blocked until supplied |
-| 2 | App display name & bundle ID (e.g. `com.trvyam.businessmanagement`) | Needed before native config |
+| 1 | Official logo | ✅ Received (raster PNG; SVG master recommended) |
+| 2 | App display name | ✅ "Trvyam Management". Bundle ID still needed (proposed `com.trvyam.management`) |
 | 3 | Sales returns tables | Add |
 | 4 | Invoice series | Per business + FY (`INV/2026-27/0001`) |
 | 5 | State-code based CGST/SGST vs IGST | Yes, plus customer `StateCode` |
