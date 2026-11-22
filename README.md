@@ -2,7 +2,7 @@
 
 Multi-business management app: React Native (Android/iOS) + ASP.NET Core Web API (.NET 10) + Microsoft SQL Server.
 
-**Status:** Phase 1-3 approval package complete; branding assets added. No application code yet. App name: Trvyam Management.
+**Status:** Phases 1-5 done (approval package, backend setup, database layer; CI green). Next: Phase 6 authentication & authorization. App name: Trvyam Management.
 
 ## Review these first
 1. [Requirements breakdown](Documentation/Architecture/01-requirements-breakdown.md)

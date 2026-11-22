@@ -6,7 +6,7 @@
 - [x] Branding assets received (logo, app name)
 - [ ] **Approval of the above** ← current gate
 - [x] Phase 4 - Backend solution setup (code written; Domain project builds locally; full build NOT yet verified - see below)
-- [x] Phase 5 - Database layer: entities, Fluent config, DbContext (audit + soft delete), InitialCreate migration, SQL view/trigger migration, admin seeder (verification: see CI)
+- [x] Phase 5 - Database layer: entities, Fluent config, DbContext (audit + soft delete), InitialCreate migration, SQL view/trigger migration, admin seeder - **verified by CI on real SQL Server 2022 (commit 204fb28)**
 - [ ] Phases 6-16 (backend, DB migrations, auth, APIs, RN app, tests, builds, docs)
 
-Build/test status: .NET 10 SDK installed in the authoring sandbox, but NuGet is unreachable there, so only the dependency-free Domain project has been compiled. Application/Infrastructure/API/Tests are **unverified until CI runs** (`Documentation/Setup/ci-templates/backend-ci.yml` -> `.github/workflows/`). The SQL has not been executed against a live SQL Server.
+Build/test status: GitHub Actions builds the solution and runs unit + SQL Server database tests on every backend push (green as of Phase 5). The authoring sandbox cannot reach NuGet, so verification happens in CI. Nothing outside the backend (mobile app) exists yet.
