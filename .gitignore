@@ -438,3 +438,4 @@ secrets.json
 node_modules/
 Frontend/android/app/build/
 Frontend/ios/Pods/
+TestResults/
