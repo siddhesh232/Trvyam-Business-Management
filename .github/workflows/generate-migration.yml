@@ -1,0 +1,41 @@
+name: Generate EF migration
+# Triggered by committing Backend/migration-request.txt (first line = migration name).
+# Generates the migration with dotnet-ef, commits it, and removes the request file.
+on:
+  push:
+    paths: ['Backend/migration-request.txt']
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Generate migration
+        run: |
+          set +e
+          if [ ! -f Backend/migration-request.txt ]; then echo "No request file."; exit 0; fi
+          NAME=$(head -n1 Backend/migration-request.txt | tr -d '\r\n ')
+          dotnet tool install --global dotnet-ef --version '10.*' > gen.log 2>&1
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet restore Backend/BusinessManagement.sln >> gen.log 2>&1
+          dotnet ef migrations add "$NAME" \
+            --project Backend/BusinessManagement.Infrastructure \
+            --startup-project Backend/BusinessManagement.API \
+            --output-dir Persistence/Migrations >> gen.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            msg=$(tail -c 3500 gen.log | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=MigrationFailure::${msg}"
+            exit $code
+          fi
+          rm -f gen.log
+          git rm -q Backend/migration-request.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Generate EF migration $NAME"
+          git push

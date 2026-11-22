@@ -11,6 +11,7 @@ public sealed class TestApiFactory : WebApplicationFactory<Program>
     {
         // Program.cs reads Jwt settings eagerly while building the host, before WebApplicationFactory's
         // ConfigureAppConfiguration callbacks run, so test secrets must come from environment variables.
+        Environment.SetEnvironmentVariable("ConnectionStrings__Default", "Server=localhost;Database=unused;TrustServerCertificate=True");
         Environment.SetEnvironmentVariable("Jwt__SigningKey", "test-only-signing-key-0123456789-abcdef-0123456789");
     }
 

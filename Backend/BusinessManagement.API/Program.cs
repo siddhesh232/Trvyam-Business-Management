@@ -1,6 +1,11 @@
 using System.Text;
 using BusinessManagement.API.Configuration;
 using BusinessManagement.API.Middleware;
+using BusinessManagement.API.Services;
+using BusinessManagement.Application.Abstractions;
+using BusinessManagement.Infrastructure;
+using BusinessManagement.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -32,11 +37,15 @@ builder.Services
             ValidateAudience = true, ValidAudience = jwt.Audience,
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.SigningKey)),
+            NameClaimType = "sub", RoleClaimType = "role",
             ValidateLifetime = true,
             ClockSkew = TimeSpan.FromSeconds(30)
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, CurrentUser>();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 builder.Services.AddControllers()
     .AddJsonOptions(o => o.JsonSerializerOptions.DefaultIgnoreCondition =
@@ -60,6 +69,16 @@ builder.Services.AddSwaggerGen(o =>
 });
 
 var app = builder.Build();
+
+// Optional: apply migrations and seed the Admin on startup (enable per environment with Database:MigrateOnStartup=true).
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+    var created = await DbSeeder.SeedAdminAsync(db, scope.ServiceProvider.GetRequiredService<IPasswordHasher>(), app.Configuration);
+    app.Logger.LogInformation("Database migrated. Admin seeded: {Created}", created);
+}
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseSerilogRequestLogging();

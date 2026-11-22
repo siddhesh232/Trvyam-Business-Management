@@ -14,5 +14,6 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <ProjectReference Include="..\BusinessManagement.API\BusinessManagement.API.csproj" />
+    <ProjectReference Include="..\BusinessManagement.Infrastructure\BusinessManagement.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

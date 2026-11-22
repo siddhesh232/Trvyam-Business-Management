@@ -16,6 +16,16 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
+      - name: Start SQL Server (throwaway container, random password)
+        run: |
+          PW="Aa1!$(openssl rand -hex 12)"
+          echo "::add-mask::$PW"
+          docker run -d --name mssql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$PW" -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+          echo "TEST_SQL_CONNECTION=Server=localhost,1433;User Id=sa;Password=$PW;TrustServerCertificate=True;Encrypt=False" >> "$GITHUB_ENV"
+          for i in $(seq 1 40); do
+            docker exec mssql /opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P "$PW" -Q "SELECT 1" >/dev/null 2>&1 && break
+            sleep 3
+          done
       - run: dotnet restore BusinessManagement.sln
       - run: dotnet build BusinessManagement.sln --no-restore -c Release
       - name: Test
