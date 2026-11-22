@@ -123,7 +123,9 @@ public sealed class UserService(IAppDbContext db, IPasswordHasher hasher, ICurre
         await using var tx = await db.BeginTransactionAsync(ct);
         var businesses = await db.BusinessMembers.Where(m => m.UserId == id && m.IsActive).Select(m => m.BusinessId).ToListAsync(ct);
         foreach (var m in await db.BusinessMembers.Where(m => m.UserId == id && m.IsActive).ToListAsync(ct)) m.IsActive = false;
-        db.Users.Remove(user);                 // becomes a soft delete; history (expenses, sales) keeps pointing at the row
+        // Soft delete by flag (not Remove): tracked dependents + restricted FKs make Remove throw. The audit log still records a Delete.
+        user.IsDeleted = true;
+        user.IsActive = false;
         await db.SaveChangesAsync(ct);
         await membership.EnsureMinimumMemberAsync(businesses, ct);   // cannot orphan a business
         await RevokeSessionsAsync(id, ct);

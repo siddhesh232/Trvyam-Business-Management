@@ -99,7 +99,7 @@ public sealed class BusinessService(IAppDbContext db, ICurrentUser current, Memb
     {
         RequireAdmin();
         var business = await db.Businesses.FirstOrDefaultAsync(b => b.Id == id, ct) ?? throw new NotFoundException("Business not found.");
-        db.Businesses.Remove(business);   // soft delete: financial history is retained
+        business.IsDeleted = true;   // soft delete: financial history is retained; audited as Delete
         await db.SaveChangesAsync(ct);
     }
 
