@@ -140,6 +140,9 @@ public sealed class GstInvoiceConfiguration : IEntityTypeConfiguration<GstInvoic
         {
             t.HasCheckConstraint("CK_Inv_Tax", "([IsInterState] = 1 AND [Cgst] = 0 AND [Sgst] = 0) OR ([IsInterState] = 0 AND [Igst] = 0)");
             t.HasCheckConstraint("CK_Inv_Total", "[GrandTotal] = [TaxableAmount] + [Cgst] + [Sgst] + [Igst]");
+            // Triggers are created by SQL migration; declaring them makes EF avoid OUTPUT-clause saves on this table.
+            t.HasTrigger("TR_GstInvoices_Immutable");
+            t.HasTrigger("TR_GstInvoices_NoDelete");
         });
         b.Property(x => x.FinancialYear).HasColumnType("char(7)").IsRequired();
         b.Property(x => x.InvoiceNumber).HasMaxLength(40).IsRequired();
