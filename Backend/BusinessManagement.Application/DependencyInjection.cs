@@ -1,4 +1,6 @@
 using BusinessManagement.Application.Auth;
+using BusinessManagement.Application.Businesses;
+using BusinessManagement.Application.Users;
 using BusinessManagement.Application.Authorization;
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,6 +14,9 @@ public static class DependencyInjection
         services.AddValidatorsFromAssemblyContaining<LoginRequestValidator>(ServiceLifetime.Singleton);
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IBusinessAccessService, BusinessAccessService>();
+        services.AddScoped<MembershipManager>();
+        services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IBusinessService, BusinessService>();
         return services;
     }
 }
