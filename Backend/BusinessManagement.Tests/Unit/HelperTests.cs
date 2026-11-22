@@ -1,5 +1,6 @@
 using BusinessManagement.Application.Businesses;
 using BusinessManagement.Application.Common;
+using BusinessManagement.Domain.Billing;
 using BusinessManagement.Domain.Enums;
 using FluentAssertions;
 
@@ -58,4 +59,88 @@ public class PermissionDtoTests
         foreach (var p in Enum.GetValues<Permission>()) props.Should().Contain("Can" + p);
         props.Count.Should().Be(Enum.GetValues<Permission>().Length, "no stray flags");
     }
+}
+
+public class SalesCalculatorTests
+{
+    private static SaleTotals Calc(decimal orderDiscount, params SaleLineInput[] lines) => SalesCalculator.Calculate(lines, orderDiscount);
+
+    [Fact]
+    public void Plain_line_adds_gst_on_top_of_the_exclusive_price()
+    {
+        var t = Calc(0, new(2, 500m, 0, 18m));
+        (t.Subtotal, t.Discount, t.Taxable, t.Gst, t.Final).Should().Be((1000m, 0m, 1000m, 180m, 1180m));
+    }
+
+    [Fact]
+    public void Item_discount_reduces_the_taxable_value_before_gst()
+    {
+        var t = Calc(0, new(2, 500m, 100m, 18m));
+        (t.Taxable, t.Gst, t.Final).Should().Be((900m, 162m, 1062m));
+    }
+
+    [Fact]
+    public void Order_discount_is_spread_pro_rata_and_gst_is_charged_on_the_discounted_values()
+    {
+        var t = Calc(30, new(1, 100m, 0, 18m), new(1, 200m, 0, 5m));
+        t.Lines.Select(l => l.Discount).Should().Equal(10m, 20m);
+        (t.Taxable, t.Gst, t.Final).Should().Be((270m, 25.2m, 295.2m));
+    }
+
+    [Fact]
+    public void Discount_shares_always_add_up_to_exactly_the_discount()
+    {
+        var t = Calc(10, new(1, 100m, 0, 0), new(1, 100m, 0, 0), new(1, 100m, 0, 0));
+        t.Lines.Sum(l => l.Discount).Should().Be(10m);
+        t.Lines.Select(l => l.Discount).Should().BeEquivalentTo(new[] { 3.34m, 3.33m, 3.33m });
+    }
+
+    [Theory]
+    [InlineData(0.01, 3)]
+    [InlineData(99.99, 7)]
+    [InlineData(1234.56, 5)]
+    public void Invariants_hold_for_awkward_amounts(double discount, int lineCount)
+    {
+        var lines = Enumerable.Range(1, lineCount).Select(i => new SaleLineInput(i, 33.33m * i, 0.17m, i % 2 == 0 ? 18m : 5m)).ToArray();
+        var gross = lines.Sum(l => SalesCalculator.Round(l.Quantity * l.UnitPrice) - l.ItemDiscount);
+        var d = (decimal)discount > gross ? 0m : (decimal)discount;
+        var t = Calc(d, lines);
+        t.Lines.Sum(l => l.Discount).Should().Be(t.Discount);
+        t.Final.Should().Be(t.Taxable + t.Gst);
+        foreach (var l in t.Lines)
+        {
+            (l.Gross - l.Discount).Should().Be(l.Taxable);
+            l.Total.Should().Be(l.Taxable + l.Gst);
+            l.Taxable.Should().BeGreaterThanOrEqualTo(0m);
+        }
+    }
+
+    [Fact]
+    public void Gst_rounds_half_away_from_zero_to_the_paisa() =>
+        Calc(0, new(1, 10.10m, 0, 5m)).Gst.Should().Be(0.51m);
+
+    [Fact]
+    public void A_full_discount_leaves_nothing_to_tax() =>
+        Calc(150, new(1, 100m, 0, 18m), new(1, 50m, 0, 18m)).Final.Should().Be(0m);
+
+    [Fact]
+    public void Invalid_amounts_are_rejected()
+    {
+        FluentActions.Invoking(() => Calc(0)).Should().Throw<BusinessManagement.Domain.Exceptions.DomainException>();
+        FluentActions.Invoking(() => Calc(0, new(0, 10m, 0, 5m))).Should().Throw<BusinessManagement.Domain.Exceptions.DomainException>();
+        FluentActions.Invoking(() => Calc(0, new(1, 10m, 11m, 5m))).Should().Throw<BusinessManagement.Domain.Exceptions.DomainException>("item discount above value");
+        FluentActions.Invoking(() => Calc(11, new(1, 10m, 0, 5m))).Should().Throw<BusinessManagement.Domain.Exceptions.DomainException>("order discount above value");
+        FluentActions.Invoking(() => Calc(-1, new(1, 10m, 0, 5m))).Should().Throw<BusinessManagement.Domain.Exceptions.DomainException>();
+    }
+}
+
+public class PaymentMathTests
+{
+    [Theory]
+    [InlineData(1000, 0, PaymentStatus.Unpaid)]
+    [InlineData(1000, 0.01, PaymentStatus.PartiallyPaid)]
+    [InlineData(1000, 999.99, PaymentStatus.PartiallyPaid)]
+    [InlineData(1000, 1000, PaymentStatus.Paid)]
+    public void Status_is_calculated_from_received_vs_due(double final, double received, PaymentStatus expected) =>
+        PaymentMath.StatusFor((decimal)final, (decimal)received).Should().Be(expected);
 }
