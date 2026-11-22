@@ -2,20 +2,19 @@ using System.Net;
 using FluentAssertions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
 
 namespace BusinessManagement.Tests.Api;
 
 public sealed class TestApiFactory : WebApplicationFactory<Program>
 {
-    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    public TestApiFactory()
     {
-        builder.UseEnvironment("Development");
-        builder.ConfigureAppConfiguration((_, cfg) => cfg.AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            ["Jwt:SigningKey"] = "test-only-signing-key-0123456789-abcdef-0123456789"
-        }));
+        // Program.cs reads Jwt settings eagerly while building the host, before WebApplicationFactory's
+        // ConfigureAppConfiguration callbacks run, so test secrets must come from environment variables.
+        Environment.SetEnvironmentVariable("Jwt__SigningKey", "test-only-signing-key-0123456789-abcdef-0123456789");
     }
+
+    protected override void ConfigureWebHost(IWebHostBuilder builder) => builder.UseEnvironment("Development");
 }
 
 public sealed class ApiSmokeTests(TestApiFactory factory) : IClassFixture<TestApiFactory>
