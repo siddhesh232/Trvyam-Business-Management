@@ -3,6 +3,7 @@ using BusinessManagement.Domain.Entities;
 using BusinessManagement.Domain.Enums;
 using BusinessManagement.Infrastructure.Security;
 using BusinessManagement.Tests.Database;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
