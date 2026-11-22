@@ -1,5 +1,7 @@
 using BusinessManagement.Application.Auth;
 using BusinessManagement.Application.Businesses;
+using BusinessManagement.Application.Customers;
+using BusinessManagement.Application.Products;
 using BusinessManagement.Application.Users;
 using BusinessManagement.Application.Authorization;
 using FluentValidation;
@@ -17,6 +19,8 @@ public static class DependencyInjection
         services.AddScoped<MembershipManager>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IBusinessService, BusinessService>();
+        services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<ICustomerService, CustomerService>();
         return services;
     }
 }
