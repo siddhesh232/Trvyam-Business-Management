@@ -11,7 +11,7 @@
 - [~] Phase 7 - Backend business APIs, in slices:
   - [x] 7a Users, businesses, member mapping (min-one-member rule), per-business permissions - CI green (581dead)
   - [x] 7b Product catalogue, global customers (find-or-create by mobile, business tags) - CI green (5f3c972)
-  - [ ] 7c Expenses + member-wise breakdown, sales orders
+  - [x] 7c Expenses + member-wise breakdown, sales orders with server-side pricing - CI green (945bd12)
   - [ ] 7d Payments, GST invoices, returns
   - [ ] 7e Dashboard, reports, adjustments, audit-log API
 - [ ] Phases 8-16 (backend, DB migrations, auth, APIs, RN app, tests, builds, docs)
