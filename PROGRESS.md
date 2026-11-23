@@ -12,7 +12,8 @@
   - [x] 7a Users, businesses, member mapping (min-one-member rule), per-business permissions - CI green (581dead)
   - [x] 7b Product catalogue, global customers (find-or-create by mobile, business tags) - CI green (5f3c972)
   - [x] 7c Expenses + member-wise breakdown, sales orders with server-side pricing - CI green (945bd12)
-  - [ ] 7d Payments, GST invoices, returns
+  - [x] 7d Payments (history, reversal, overpayment guard), GST invoices (numbering, CGST/SGST/IGST, PDF, cancel) - CI green (85fba93)
+  - [ ] 7d-2 Sales returns + credit notes (moved to 7e: dashboard 'net sales' depends on them)
   - [ ] 7e Dashboard, reports, adjustments, audit-log API
 - [ ] Phases 8-16 (backend, DB migrations, auth, APIs, RN app, tests, builds, docs)
 
