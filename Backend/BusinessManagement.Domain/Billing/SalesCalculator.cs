@@ -91,9 +91,15 @@ public static class SalesCalculator
 
 public static class PaymentMath
 {
-    /// <summary>Unpaid: nothing received. Paid: full amount received. Otherwise partially paid (FRD s.10).</summary>
-    public static PaymentStatus StatusFor(decimal finalAmount, decimal totalReceived) =>
-        totalReceived <= 0 ? PaymentStatus.Unpaid : totalReceived >= finalAmount ? PaymentStatus.Paid : PaymentStatus.PartiallyPaid;
+    /// <summary>
+    /// Status against the amount DUE (sale total minus accepted returns). Paid: everything due has been received
+    /// (including nothing due at all); Unpaid: nothing received while something is due; otherwise partially paid (FRD s.10).
+    /// </summary>
+    public static PaymentStatus StatusFor(decimal amountDue, decimal totalReceived) =>
+        totalReceived >= amountDue ? PaymentStatus.Paid
+        : totalReceived <= 0 ? PaymentStatus.Unpaid
+        : PaymentStatus.PartiallyPaid;
 
-    public static decimal Outstanding(decimal finalAmount, decimal totalReceived) => finalAmount - totalReceived;
+    /// <summary>Positive = still to collect. Negative = the customer has paid more than is now due (refund owed).</summary>
+    public static decimal Outstanding(decimal amountDue, decimal totalReceived) => amountDue - totalReceived;
 }

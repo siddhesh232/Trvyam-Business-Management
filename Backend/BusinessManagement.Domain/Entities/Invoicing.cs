@@ -14,6 +14,8 @@ public class SalesReturn
     public decimal TotalAmount { get; set; }
     public string? Reason { get; set; }
     public SalesReturnStatus Status { get; set; } = SalesReturnStatus.Accepted;
+    /// <summary>Credit note issued for this return (only when the sale had an issued tax invoice).</summary>
+    public long? CreditNoteId { get; set; }
     public long CreatedBy { get; set; }
     public DateTime CreatedAt { get; set; }
     public ICollection<SalesReturnItem> Items { get; set; } = [];

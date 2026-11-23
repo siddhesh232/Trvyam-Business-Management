@@ -105,6 +105,7 @@ public sealed class SalesReturnConfiguration : IEntityTypeConfiguration<SalesRet
         b.Property(x => x.Reason).HasMaxLength(300);
         b.HasOne<Business>().WithMany().HasForeignKey(x => x.BusinessId).OnDelete(DeleteBehavior.Restrict);
         b.HasOne<SalesOrder>().WithMany().HasForeignKey(x => x.SalesOrderId).OnDelete(DeleteBehavior.Restrict);
+        b.HasOne<GstInvoice>().WithMany().HasForeignKey(x => x.CreditNoteId).OnDelete(DeleteBehavior.Restrict);
         b.UserFk(nameof(SalesReturn.CreatedBy));
         b.HasIndex(x => new { x.BusinessId, x.ReturnDate }).HasDatabaseName("IX_SR_BizDate");
     }
