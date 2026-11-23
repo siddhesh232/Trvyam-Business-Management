@@ -17,6 +17,23 @@ public sealed class TestApi(ApiFixture fx)
     public const string Pw = "Valid-Pass-12345";
     public static string Tag() => Guid.NewGuid().ToString("N")[..8];
 
+    /// <summary>A random but checksum-valid GSTIN for the given 2-digit state code.</summary>
+    public static string NewGstin(string state = "27")
+    {
+        const string alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        var r = Random.Shared;
+        string Letters(int n) => new(Enumerable.Range(0, n).Select(_ => (char)('A' + r.Next(26))).ToArray());
+        var b = state + Letters(5) + r.Next(1000, 9999) + Letters(1) + "1Z";
+        var sum = 0;
+        for (var i = 0; i < 14; i++) { var v = alphabet.IndexOf(b[i]) * (i % 2 == 0 ? 1 : 2); sum += v / 36 + v % 36; }
+        return b + alphabet[(36 - sum % 36) % 36];
+    }
+
+    /// <summary>Fills in GSTIN + address so the business can issue GST invoices.</summary>
+    public async Task<BusinessDetailDto> MakeInvoiceReadyAsync(HttpClient admin, BusinessDetailDto biz, string? gstin = null) =>
+        await Ok<BusinessDetailDto>(await admin.PutAsJsonAsync($"/api/v1/businesses/{biz.Id}", new
+        { name = biz.Name, gstNumber = gstin ?? NewGstin("27"), addressLine = "12 Market Road, Pune", isActive = true }));
+
     public async Task<HttpClient> SignInAsync(string username, string password)
     {
         var c = fx.CreateClient();

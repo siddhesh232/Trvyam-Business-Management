@@ -1,6 +1,7 @@
 using BusinessManagement.Domain.Entities;
 using BusinessManagement.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -46,6 +47,7 @@ public interface IAppDbContext
     DbSet<FinancialAdjustment> FinancialAdjustments { get; }
     DbSet<AuditLog> AuditLogs { get; }
     DatabaseFacade Database { get; }
+    ChangeTracker ChangeTracker { get; }
     Task<IDbContextTransaction> BeginTransactionAsync(CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

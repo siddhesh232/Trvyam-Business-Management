@@ -1,5 +1,7 @@
 using BusinessManagement.Application.Abstractions;
 using BusinessManagement.Infrastructure.Email;
+using BusinessManagement.Infrastructure.Pdf;
+using BusinessManagement.Application.Invoices;
 using BusinessManagement.Infrastructure.Persistence;
 using BusinessManagement.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
@@ -21,6 +23,7 @@ public static class DependencyInjection
         services.AddSingleton<IPasswordHasher, Pbkdf2PasswordHasher>();
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
+        services.AddSingleton<IInvoicePdfGenerator, QuestPdfInvoiceGenerator>();
         return services;
     }
 }

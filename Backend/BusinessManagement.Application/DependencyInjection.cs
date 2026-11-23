@@ -2,6 +2,8 @@ using BusinessManagement.Application.Auth;
 using BusinessManagement.Application.Businesses;
 using BusinessManagement.Application.Customers;
 using BusinessManagement.Application.Expenses;
+using BusinessManagement.Application.Invoices;
+using BusinessManagement.Application.Payments;
 using BusinessManagement.Application.Sales;
 using BusinessManagement.Application.Products;
 using BusinessManagement.Application.Users;
@@ -25,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<IExpenseService, ExpenseService>();
         services.AddScoped<ISalesService, SalesService>();
+        services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<IInvoiceService, InvoiceService>();
         return services;
     }
 }
