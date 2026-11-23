@@ -42,6 +42,7 @@ public sealed class QuestPdfInvoiceGenerator : IInvoicePdfGenerator
                         c.Item().Text(inv.DocTitle).FontSize(15).Bold();
                         c.Item().Text($"No: {inv.InvoiceNumber}");
                         c.Item().Text($"Date: {inv.InvoiceDate:dd-MMM-yyyy}");
+                        if (!string.IsNullOrWhiteSpace(inv.OriginalInvoiceNumber)) c.Item().Text($"Against invoice: {inv.OriginalInvoiceNumber}");
                         if (cancelled) c.Item().Text("*** CANCELLED ***").Bold().FontColor(Colors.Red.Medium);
                     });
                 });

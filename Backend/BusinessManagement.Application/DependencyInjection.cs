@@ -1,7 +1,10 @@
+using BusinessManagement.Application.Adjustments;
+using BusinessManagement.Application.Audit;
 using BusinessManagement.Application.Auth;
 using BusinessManagement.Application.Businesses;
 using BusinessManagement.Application.Customers;
 using BusinessManagement.Application.Expenses;
+using BusinessManagement.Application.Financials;
 using BusinessManagement.Application.Invoices;
 using BusinessManagement.Application.Payments;
 using BusinessManagement.Application.Sales;
@@ -29,6 +32,13 @@ public static class DependencyInjection
         services.AddScoped<ISalesService, SalesService>();
         services.AddScoped<IPaymentService, PaymentService>();
         services.AddScoped<IInvoiceService, InvoiceService>();
+        services.AddScoped<InvoiceSequenceAllocator>();
+        services.AddScoped<IReturnService, BusinessManagement.Application.Returns.ReturnService>();
+        services.AddScoped<IAdjustmentService, AdjustmentService>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
+        services.AddScoped<FinancialDataLoader>();
+        services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<IReportService, ReportService>();
         return services;
     }
 }

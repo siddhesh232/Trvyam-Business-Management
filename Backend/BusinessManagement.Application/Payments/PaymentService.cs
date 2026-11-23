@@ -30,8 +30,9 @@ public sealed class PaymentService(IAppDbContext db, IBusinessAccessService acce
         var mode = ParseMode(r.PaymentMode);
         EnsureDate(order, r.PaymentDate);
 
+        var net = order.FinalAmount - await ReturnedAsync(saleId, ct);      // returns reduce what is due
         var received = await ReceivedAsync(saleId, null, ct);
-        var outstanding = order.FinalAmount - received;
+        var outstanding = net - received;
         if (r.Amount > outstanding)
             throw new DomainException($"Payment ({r.Amount:0.00}) exceeds the outstanding amount ({outstanding:0.00}). Overpayments are not allowed.", "overpayment");
 
@@ -55,9 +56,10 @@ public sealed class PaymentService(IAppDbContext db, IBusinessAccessService acce
 
         var mode = ParseMode(r.PaymentMode);
         EnsureDate(order, r.PaymentDate);
+        var netDue = order.FinalAmount - await ReturnedAsync(saleId, ct);
         var othersReceived = await ReceivedAsync(saleId, paymentId, ct);
-        if (othersReceived + r.Amount > order.FinalAmount)
-            throw new DomainException($"The payment would exceed the sale total. Maximum for this payment: {order.FinalAmount - othersReceived:0.00}.", "overpayment");
+        if (othersReceived + r.Amount > netDue)
+            throw new DomainException($"The payment would exceed the amount due. Maximum for this payment: {Math.Max(0m, netDue - othersReceived):0.00}.", "overpayment");
 
         p.PaymentDate = r.PaymentDate; p.Amount = r.Amount; p.PaymentMode = mode;
         p.TransactionReference = Clean(r.TransactionReference); p.Notes = Clean(r.Notes);
@@ -105,6 +107,9 @@ public sealed class PaymentService(IAppDbContext db, IBusinessAccessService acce
         await db.Payments.Where(p => p.SalesOrderId == saleId && p.Status == PaymentRecordStatus.Valid && p.Id != exceptPaymentId)
             .SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
 
+    private async Task<decimal> ReturnedAsync(long saleId, CancellationToken ct) =>
+        await db.SalesReturns.Where(r => r.SalesOrderId == saleId && r.Status == SalesReturnStatus.Accepted).SumAsync(r => (decimal?)r.TotalAmount, ct) ?? 0m;
+
     private async Task SaveAsync(CancellationToken ct)
     {
         try { await db.SaveChangesAsync(ct); }
@@ -127,7 +132,9 @@ public sealed class PaymentService(IAppDbContext db, IBusinessAccessService acce
             r.Status == PaymentRecordStatus.Valid && a.CanModifyOwn(r.ReceivedBy, Permission.EditOwnPayments),
             r.Status == PaymentRecordStatus.Valid && a.CanModifyOwn(r.ReceivedBy, Permission.DeleteOwnPayments))).ToList();
 
-        return new PaymentHistoryDto(order.Id, order.FinalAmount, received, PaymentMath.Outstanding(order.FinalAmount, received),
-            PaymentMath.StatusFor(order.FinalAmount, received).ToString(), items);
+        var returned = await ReturnedAsync(order.Id, ct);
+        var net = order.FinalAmount - returned;
+        return new PaymentHistoryDto(order.Id, order.FinalAmount, received, Math.Max(0m, PaymentMath.Outstanding(net, received)),
+            PaymentMath.StatusFor(net, received).ToString(), items, returned, net, Math.Max(0m, received - net));
     }
 }

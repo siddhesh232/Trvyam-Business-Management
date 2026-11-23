@@ -11,7 +11,7 @@ public sealed record InvoiceLine(int No, string Description, string? Hsn, decima
 public sealed record InvoiceSnapshot(string DocTitle, string InvoiceNumber, DateOnly InvoiceDate, InvoiceParty Seller, InvoiceParty Buyer,
     string? PlaceOfSupplyState, bool IsInterState, IReadOnlyList<InvoiceLine> Lines,
     decimal Subtotal, decimal TotalDiscount, decimal Taxable, decimal Cgst, decimal Sgst, decimal Igst, decimal GrandTotal,
-    long SalesOrderId, DateOnly OrderDate);
+    long SalesOrderId, DateOnly OrderDate, string? OriginalInvoiceNumber = null);
 
 public sealed record InvoiceListQuery(DateOnly? From = null, DateOnly? To = null, string? Status = null, string? Q = null,
     int Page = 1, int PageSize = 20, string? Sort = null);

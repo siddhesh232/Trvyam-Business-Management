@@ -50,7 +50,7 @@ public sealed class SalesService(IAppDbContext db, IBusinessAccessService access
 
         var total = await query.CountAsync(ct);
         var items = await query.Skip((page - 1) * size).Take(size).Select(x => new SalesListItemDto(
-            x.so.Id, x.so.OrderDate, x.so.CustomerId, x.c.Name, x.c.Mobile, x.so.FinalAmount, x.ps.TotalReceived, x.ps.Outstanding,
+            x.so.Id, x.so.OrderDate, x.so.CustomerId, x.c.Name, x.c.Mobile, x.so.FinalAmount, x.ps.TotalReceived, x.ps.Outstanding > 0 ? x.ps.Outstanding : 0m,
             x.ps.PaymentStatus, x.so.CreatedBy, x.CreatedByName, x.so.Items.Count)).ToListAsync(ct);
         return new PagedResult<SalesListItemDto>(items, total, page, size);
     }
@@ -93,6 +93,7 @@ public sealed class SalesService(IAppDbContext db, IBusinessAccessService access
                     ?? throw new NotFoundException("Sale not found.");
         if (!a.CanModifyOwn(order.CreatedBy, Permission.EditOwnSales)) throw new ForbiddenException();
         if (order.InvoiceId is not null) throw new ConflictException("An invoice has been issued for this sale. Cancel the invoice before editing.");
+        if (await ReturnedAsync(id, ct) > 0) throw new ConflictException("This sale has returns and can no longer be edited.");
 
         var (lines, totals) = await PriceAsync(businessId, r.Items, r.OrderDiscount, a, ct);
         var received = await ReceivedAsync(id, ct);
@@ -115,6 +116,7 @@ public sealed class SalesService(IAppDbContext db, IBusinessAccessService access
         var order = await db.SalesOrders.FirstOrDefaultAsync(o => o.Id == id && o.BusinessId == businessId, ct) ?? throw new NotFoundException("Sale not found.");
         if (!a.CanModifyOwn(order.CreatedBy, Permission.DeleteOwnSales)) throw new ForbiddenException();
         if (order.InvoiceId is not null) throw new ConflictException("An invoice has been issued for this sale. Cancel the invoice first.");
+        if (await ReturnedAsync(id, ct) > 0) throw new ConflictException("This sale has returns and cannot be deleted.");
         if (await ReceivedAsync(id, ct) > 0) throw new ConflictException("This sale has payments. Reverse them before deleting the sale.");
 
         order.IsDeleted = true;                                 // soft delete; financial history is never erased
@@ -175,6 +177,9 @@ public sealed class SalesService(IAppDbContext db, IBusinessAccessService access
     private async Task<decimal> ReceivedAsync(long orderId, CancellationToken ct) =>
         await db.Payments.Where(p => p.SalesOrderId == orderId && p.Status == PaymentRecordStatus.Valid).SumAsync(p => (decimal?)p.Amount, ct) ?? 0m;
 
+    private async Task<decimal> ReturnedAsync(long orderId, CancellationToken ct) =>
+        await db.SalesReturns.Where(r => r.SalesOrderId == orderId && r.Status == SalesReturnStatus.Accepted).SumAsync(r => (decimal?)r.TotalAmount, ct) ?? 0m;
+
     private async Task<SalesOrderDto> LoadDtoAsync(long businessId, long id, BusinessAccess a, CancellationToken ct)
     {
         var o = await db.SalesOrders.AsNoTracking().Include(x => x.Items).FirstOrDefaultAsync(x => x.Id == id && x.BusinessId == businessId, ct)
@@ -182,15 +187,18 @@ public sealed class SalesService(IAppDbContext db, IBusinessAccessService access
         var c = await db.Customers.IgnoreQueryFilters().AsNoTracking().FirstAsync(x => x.Id == o.CustomerId, ct);
         var creator = await db.Users.IgnoreQueryFilters().AsNoTracking().Where(u => u.Id == o.CreatedBy).Select(u => u.Name).FirstAsync(ct);
         var received = await ReceivedAsync(id, ct);
-        var status = PaymentMath.StatusFor(o.FinalAmount, received).ToString();
+        var returned = await ReturnedAsync(id, ct);
+        var net = o.FinalAmount - returned;                    // amount actually due after accepted returns
+        var status = PaymentMath.StatusFor(net, received).ToString();
 
         return new SalesOrderDto(o.Id, o.BusinessId, o.OrderDate, new SalesCustomerDto(c.Id, c.Name, c.Mobile, c.Address, c.StateCode, c.Gstin),
             o.Subtotal, o.DiscountAmount, o.TaxableAmount, o.GstAmount, o.FinalAmount, o.PlaceOfSupplyState,
-            received, PaymentMath.Outstanding(o.FinalAmount, received), status, o.InvoiceId,
+            received, Math.Max(0m, PaymentMath.Outstanding(net, received)), status, o.InvoiceId,
             o.CreatedBy, creator, o.CreatedAt,
             o.Items.OrderBy(i => i.Id).Select(i => new SalesItemDto(i.Id, i.ProductId, i.ProductNameSnapshot, i.HsnCodeSnapshot, i.Quantity, i.Unit,
                 i.UnitPrice, i.DiscountAmount, i.GstRate, i.TaxableAmount, i.GstAmount, i.TotalAmount)).ToList(),
             a.CanModifyOwn(o.CreatedBy, Permission.EditOwnSales) && o.InvoiceId is null,
-            a.CanModifyOwn(o.CreatedBy, Permission.DeleteOwnSales) && o.InvoiceId is null);
+            a.CanModifyOwn(o.CreatedBy, Permission.DeleteOwnSales) && o.InvoiceId is null,
+            returned, net, Math.Max(0m, received - net));
     }
 }

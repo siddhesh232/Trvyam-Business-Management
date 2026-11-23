@@ -17,7 +17,8 @@ public sealed record SalesItemDto(long Id, long ProductId, string ProductName, s
 public sealed record SalesOrderDto(long Id, long BusinessId, DateOnly OrderDate, SalesCustomerDto Customer,
     decimal Subtotal, decimal DiscountAmount, decimal TaxableAmount, decimal GstAmount, decimal FinalAmount, string? PlaceOfSupplyState,
     decimal TotalReceived, decimal Outstanding, string PaymentStatus, long? InvoiceId,
-    long CreatedBy, string CreatedByName, DateTime CreatedAt, IReadOnlyList<SalesItemDto> Items, bool CanEdit, bool CanDelete);
+    long CreatedBy, string CreatedByName, DateTime CreatedAt, IReadOnlyList<SalesItemDto> Items, bool CanEdit, bool CanDelete,
+    decimal ReturnedAmount, decimal NetAmount, decimal RefundDue);
 
 /// <param name="UnitPrice">Optional price override. Members always sell at the catalogue price; only the Admin may override.</param>
 /// <param name="ItemDiscount">Discount on this line (amount, before GST).</param>

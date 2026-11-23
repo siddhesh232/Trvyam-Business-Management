@@ -9,9 +9,11 @@ public sealed record PaymentDto(long Id, long SalesOrderId, DateOnly PaymentDate
     string? TransactionReference, long ReceivedBy, string ReceivedByName, string? Notes, string Status,
     DateTime? ReversedAt, string? ReversedByName, string? ReversalReason, DateTime CreatedAt, bool CanEdit, bool CanReverse);
 
-/// <param name="PaymentStatus">Unpaid | PartiallyPaid | Paid (calculated, never stored).</param>
+/// <param name="Outstanding">Still to collect after accepted returns (never negative).</param>
+/// <param name="RefundDue">Received in excess of what is now due after returns.</param>
+/// <param name="PaymentStatus">Unpaid | PartiallyPaid | Paid (calculated against the net amount due, never stored).</param>
 public sealed record PaymentHistoryDto(long SalesOrderId, decimal FinalAmount, decimal TotalReceived, decimal Outstanding,
-    string PaymentStatus, IReadOnlyList<PaymentDto> Payments);
+    string PaymentStatus, IReadOnlyList<PaymentDto> Payments, decimal ReturnedAmount, decimal NetAmount, decimal RefundDue);
 
 public interface IPaymentService
 {

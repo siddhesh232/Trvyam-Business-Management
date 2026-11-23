@@ -15,7 +15,7 @@ namespace BusinessManagement.Application.Invoices;
 /// credit notes), never by editing. Numbers are sequential per business + financial year; allocation happens inside the same
 /// transaction as the invoice insert under a row lock, so concurrent issuers cannot duplicate or skip a number.
 /// </remarks>
-public sealed class InvoiceService(IAppDbContext db, IBusinessAccessService access, IInvoicePdfGenerator pdf, TimeProvider clock) : IInvoiceService
+public sealed class InvoiceService(IAppDbContext db, IBusinessAccessService access, IInvoicePdfGenerator pdf, InvoiceSequenceAllocator sequences, TimeProvider clock) : IInvoiceService
 {
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
@@ -29,19 +29,8 @@ public sealed class InvoiceService(IAppDbContext db, IBusinessAccessService acce
 
         await using var tx = await db.BeginTransactionAsync(ct);
 
-        // 1) Make sure the counter row exists (another request may create it first - fine), then bump it atomically.
-        //    The UPDATE takes a row lock held until commit, which serialises concurrent issuers for this business/year.
-        if (!await db.InvoiceSequences.AnyAsync(s => s.BusinessId == businessId && s.FinancialYear == fy && s.DocType == InvoiceDocType.TaxInvoice, ct))
-        {
-            db.InvoiceSequences.Add(new InvoiceSequence { BusinessId = businessId, FinancialYear = fy, DocType = InvoiceDocType.TaxInvoice, LastNumber = 0 });
-            try { await db.SaveChangesAsync(ct); }
-            catch (DbUpdateException) { db.ChangeTracker.Clear(); }   // lost a race to create it: use the winner's row
-        }
-        await db.InvoiceSequences.Where(s => s.BusinessId == businessId && s.FinancialYear == fy && s.DocType == InvoiceDocType.TaxInvoice)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.LastNumber, x => x.LastNumber + 1), ct);
-        var seq = await db.InvoiceSequences.AsNoTracking()
-            .Where(s => s.BusinessId == businessId && s.FinancialYear == fy && s.DocType == InvoiceDocType.TaxInvoice)
-            .Select(s => s.LastNumber).FirstAsync(ct);
+        // 1) Next gapless number for this business/year, allocated under a row lock inside this transaction.
+        var seq = await sequences.NextAsync(businessId, fy, InvoiceDocType.TaxInvoice, ct);
 
         // 2) Validate the sale and the parties.
         var business = await db.Businesses.AsNoTracking().FirstAsync(b => b.Id == businessId, ct);
@@ -159,6 +148,8 @@ public sealed class InvoiceService(IAppDbContext db, IBusinessAccessService acce
         var inv = await db.GstInvoices.FirstOrDefaultAsync(x => x.Id == invoiceId && x.BusinessId == businessId, ct) ?? throw new NotFoundException("Invoice not found.");
         if (inv.DocType != InvoiceDocType.TaxInvoice) throw new ConflictException("Only tax invoices can be cancelled.");
         if (inv.Status != InvoiceStatus.Issued) throw new ConflictException("This invoice is already cancelled.");
+        if (await db.GstInvoices.AnyAsync(x => x.OriginalInvoiceId == inv.Id && x.DocType == InvoiceDocType.CreditNote && x.Status == InvoiceStatus.Issued, ct))
+            throw new ConflictException("Credit notes have been issued against this invoice, so it cannot be cancelled.");
 
         await using var tx = await db.BeginTransactionAsync(ct);
         inv.Status = InvoiceStatus.Cancelled;           // the number stays in the series as a cancelled document
