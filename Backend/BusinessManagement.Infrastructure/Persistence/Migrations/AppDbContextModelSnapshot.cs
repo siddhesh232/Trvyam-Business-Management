@@ -629,10 +629,16 @@ namespace BusinessManagement.Infrastructure.Persistence.Migrations
 
                     b.ToTable("GstInvoices", null, t =>
                         {
+                            t.HasTrigger("TR_GstInvoices_Immutable");
+
+                            t.HasTrigger("TR_GstInvoices_NoDelete");
+
                             t.HasCheckConstraint("CK_Inv_Tax", "([IsInterState] = 1 AND [Cgst] = 0 AND [Sgst] = 0) OR ([IsInterState] = 0 AND [Igst] = 0)");
 
                             t.HasCheckConstraint("CK_Inv_Total", "[GrandTotal] = [TaxableAmount] + [Cgst] + [Sgst] + [Igst]");
                         });
+
+                    b.HasAnnotation("SqlServer:UseSqlOutputClause", false);
                 });
 
             modelBuilder.Entity("BusinessManagement.Domain.Entities.InvoiceSequence", b =>
@@ -1131,6 +1137,9 @@ namespace BusinessManagement.Infrastructure.Persistence.Migrations
                     b.Property<long>("CreatedBy")
                         .HasColumnType("bigint");
 
+                    b.Property<long?>("CreditNoteId")
+                        .HasColumnType("bigint");
+
                     b.Property<decimal>("GstAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -1159,6 +1168,8 @@ namespace BusinessManagement.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedBy");
+
+                    b.HasIndex("CreditNoteId");
 
                     b.HasIndex("SalesOrderId");
 
@@ -1644,6 +1655,11 @@ namespace BusinessManagement.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CreatedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("BusinessManagement.Domain.Entities.GstInvoice", null)
+                        .WithMany()
+                        .HasForeignKey("CreditNoteId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("BusinessManagement.Domain.Entities.SalesOrder", null)
                         .WithMany()
