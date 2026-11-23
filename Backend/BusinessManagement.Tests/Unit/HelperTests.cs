@@ -142,6 +142,8 @@ public class PaymentMathTests
     [InlineData(1000, 0.01, PaymentStatus.PartiallyPaid)]
     [InlineData(1000, 999.99, PaymentStatus.PartiallyPaid)]
     [InlineData(1000, 1000, PaymentStatus.Paid)]
+    [InlineData(0, 0, PaymentStatus.Paid)]          // nothing due (fully returned) counts as paid
+    [InlineData(400, 600, PaymentStatus.Paid)]      // over-received after a return: paid, refund owed
     public void Status_is_calculated_from_received_vs_due(double final, double received, PaymentStatus expected) =>
         PaymentMath.StatusFor((decimal)final, (decimal)received).Should().Be(expected);
 }
