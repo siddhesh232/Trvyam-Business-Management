@@ -8,6 +8,7 @@ using BusinessManagement.Application.Products;
 using BusinessManagement.Application.Returns;
 using BusinessManagement.Application.Sales;
 using BusinessManagement.Domain.Billing;
+using BusinessManagement.Tests.Database;
 using FluentAssertions;
 
 namespace BusinessManagement.Tests.Api;
