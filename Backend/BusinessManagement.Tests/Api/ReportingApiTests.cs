@@ -7,6 +7,7 @@ using BusinessManagement.Application.Expenses;
 using BusinessManagement.Application.Financials;
 using BusinessManagement.Application.Users;
 using BusinessManagement.Domain.Enums;
+using BusinessManagement.Tests.Database;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 
