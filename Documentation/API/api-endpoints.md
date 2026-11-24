@@ -1,3 +1,8 @@
+> **Source of truth:** the live Swagger/OpenAPI document (`/swagger` when `Swagger__Enabled=true` or in Development). The list below is the
+> original approval draft; the implemented routes are business-scoped (e.g. `/api/v1/businesses/{businessId}/sales/{saleId}/payments`).
+> Notable additions: `/my-permissions`, `/customers/resolve`, `/expenses/summary`, `/expenses/by-member`, `/sales/{id}/returns`,
+> `/invoices/{id}/pdf`, `/dashboard`, `/dashboard/consolidated`, `/reports`, `/adjustments`, `/audit-logs`.
+
 # 3. API Endpoint List (v1, approval draft)
 
 Base: `/api/v1`. All except `auth/login`, `auth/refresh`, `auth/admin/forgot-password`, `auth/admin/reset-password` require JWT. `{bid}` = business id; access + permission always checked server-side.

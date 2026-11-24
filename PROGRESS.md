@@ -8,13 +8,12 @@
 - [x] Phase 4 - Backend solution setup (code written; Domain project builds locally; full build NOT yet verified - see below)
 - [x] Phase 5 - Database layer: entities, Fluent config, DbContext (audit + soft delete), InitialCreate migration, SQL view/trigger migration, admin seeder - **verified by CI on real SQL Server 2022 (commit 204fb28)**
 - [x] Phase 6 - Authentication & authorization (login, JWT, refresh rotation + reuse detection, Admin SMTP reset, Admin-set member passwords, permission engine, rate limiting) - **verified by CI (commit 3782842)**
-- [~] Phase 7 - Backend business APIs, in slices:
-  - [x] 7a Users, businesses, member mapping (min-one-member rule), per-business permissions - CI green (581dead)
-  - [x] 7b Product catalogue, global customers (find-or-create by mobile, business tags) - CI green (5f3c972)
-  - [x] 7c Expenses + member-wise breakdown, sales orders with server-side pricing - CI green (945bd12)
-  - [x] 7d Payments (history, reversal, overpayment guard), GST invoices (numbering, CGST/SGST/IGST, PDF, cancel) - CI green (85fba93)
-  - [ ] 7d-2 Sales returns + credit notes (moved to 7e: dashboard 'net sales' depends on them)
-  - [ ] 7e Dashboard, reports, adjustments, audit-log API
+- [x] Phase 7 - Backend business APIs (all slices CI green; last commit 13e1bed):
+  - [x] 7a Users, businesses, member mapping (min-one-member rule), per-business permissions
+  - [x] 7b Product catalogue, global customers (find-or-create by mobile, business tags)
+  - [x] 7c Expenses + permission-gated member-wise breakdown, sales orders with server-side pricing
+  - [x] 7d Payments (history, reversal, overpayment guard), GST invoices (numbering, CGST/SGST/IGST, PDF, cancel)
+  - [x] 7e Returns + credit notes, financial adjustments, dashboard (per business + consolidated), daily/weekly/monthly/custom reports, audit-log API
 - [ ] Phases 8-16 (backend, DB migrations, auth, APIs, RN app, tests, builds, docs)
 
 Build/test status: GitHub Actions builds the solution and runs unit + SQL Server database tests on every backend push (green as of Phase 5). The authoring sandbox cannot reach NuGet, so verification happens in CI. Nothing outside the backend (mobile app) exists yet.
